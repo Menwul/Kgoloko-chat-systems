@@ -16,6 +16,9 @@ app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=24)
 app.secret_key = os.urandom(24)  # Secure secret key
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'mp4', 'mov', 'avi', 'wav', 'mp3', 'ogg', 'webm'}
 
+# Ensure upload folder exists when application starts
+os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
