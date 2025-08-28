@@ -17,15 +17,7 @@
                 </div>
                 {% endif %}
                 
-                <div class="alert alert-info mb-3" id="task-instruction">
-                    Please complete the verification task to enable registration.
-                </div>
-                
-                <button type="button" id="linkvertise-task-btn" class="btn btn-warning mb-3">
-                    <i class="fas fa-link me-2"></i>Complete Verification Task
-                </button>
-                
-                <form method="POST" action="{{ url_for('register') }}" id="register-form">
+                <form method="POST" action="{{ url_for('register') }}">
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label for="username" class="form-label">Username</label>
@@ -60,7 +52,7 @@
                     </div>
                     
                     <div class="d-grid">
-                        <button type="submit" class="btn btn-primary-green" id="submit-btn" disabled>Register</button>
+                        <button type="submit" class="btn btn-primary-green">Register</button>
                     </div>
                 </form>
                 
@@ -72,54 +64,4 @@
         </div>
     </div>
 </div>
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const taskButton = document.getElementById('linkvertise-task-btn');
-    const submitButton = document.getElementById('submit-btn');
-    const taskInstruction = document.getElementById('task-instruction');
-    
-    // Generate a temporary user ID for unauthenticated users
-    const tempUserId = Math.random().toString(36).substring(2, 15);
-    
-    // Check task completion on page load
-    fetch('/check_task_completion')
-        .then(response => response.json())
-        .then(data => {
-            if (data.task_completed) {
-                submitButton.disabled = false;
-                taskInstruction.classList.add('d-none');
-                taskButton.classList.add('d-none');
-            }
-        })
-        .catch(error => {
-            console.error('Error checking task completion:', error);
-        });
-    
-    // Handle task button click
-    taskButton.addEventListener('click', function() {
-        // Use the provided Linkvertise URL with a user_id parameter
-        const linkvertiseUrl = 'https://link-center.net/1388179/t5k8OuNrdtUy?user_id=' + encodeURIComponent(tempUserId);
-        window.open(linkvertiseUrl, '_blank');
-        
-        // Poll for task completion
-        const checkCompletion = setInterval(() => {
-            fetch('/check_task_completion?user_id=' + encodeURIComponent(tempUserId))
-                .then(response => response.json())
-                .then(data => {
-                    if (data.task_completed) {
-                        clearInterval(checkCompletion);
-                        submitButton.disabled = false;
-                        taskInstruction.classList.add('d-none');
-                        taskButton.classList.add('d-none');
-                        alert('Verification task completed! You can now register.');
-                    }
-                })
-                .catch(error => {
-                    console.error('Error checking task completion:', error);
-                });
-        }, 5000); // Check every 5 seconds
-    });
-});
-</script>
 {% endblock %}
