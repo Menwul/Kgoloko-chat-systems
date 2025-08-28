@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+
+{% block title %}Register - Kgoloko Chatroom{% endblock %}
+
+{% block content %}
+<div class="container-fluid vh-100 d-flex align-items-center justify-content-center bg-light">
+    <div class="row w-100 justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="login-container p-5">
+                <h1 class="mb-4 text-center text-primary-green">
+                    <i class="fas fa-user-plus me-2"></i>Create Account
+                </h1>
+                
+                {% if error %}
+                <div class="alert alert-danger" role="alert">
+                    {{ error }}
+                </div>
+                {% endif %}
+                
+                <div class="alert alert-info mb-3" id="task-instruction">
+                    Please complete the verification task to enable registration.
+                </div>
+                
+                <button type="button" id="linkvertise-task-btn" class="btn btn-warning mb-3">
+                    <i class="fas fa-link me-2"></i>Complete Verification Task
+                </button>
+                
+                <form method="POST" action="{{ url_for('register') }}" id="register-form">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="username" class="form-label">Username</label>
+                            <input type="text" class="form-control" id="username" name="username" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="email" class="form-label">Email (optional)</label>
+                            <input type="email" class="form-control" id="email" name="email">
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="password" class="form-label">Password</label>
+                            <input type="password" class="form-control" id="password" name="password" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="confirm_password" class="form-label">Confirm Password</label>
+                            <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="role" class="form-label">Role</label>
+                        <select class="form-select" id="role" name="role" required>
+                            <option value="">Select your role</option>
+                            <option value="student">Student</option>
+                            <option value="teacher">Teacher</option>
+                            <option value="parent">Parent</option>
+                            <option value="admin">Administrator</option>
+                        </select>
+                    </div>
+                    
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary-green" id="submit-btn" disabled>Register</button>
+                    </div>
+                </form>
+                
+                <hr>
+                <div class="text-center">
+                    <p>Already have an account? <a href="{{ url_for('login') }}" class="text-primary-green">Login here</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const taskButton = document.getElementById('linkvertise-task-btn');
+    const submitButton = document.getElementById('submit-btn');
+    const taskInstruction = document.getElementById('task-instruction');
+    
+    // Generate a temporary user ID for unauthenticated users
+    const tempUserId = Math.random().toString(36).substring(2, 15);
+    
+    // Check task completion on page load
+    fetch('/check_task_completion')
+        .then(response => response.json())
+        .then(data => {
+            if (data.task_completed) {
+                submitButton.disabled = false;
+                taskInstruction.classList.add('d-none');
+                taskButton.classList.add('d-none');
+            }
+        })
+        .catch(error => {
+            console.error('Error checking task completion:', error);
+        });
+    
+    // Handle task button click
+    taskButton.addEventListener('click', function() {
+        // Use the provided Linkvertise URL with a user_id parameter
+        const linkvertiseUrl = 'https://link-center.net/1388179/t5k8OuNrdtUy?user_id=' + encodeURIComponent(tempUserId);
+        window.open(linkvertiseUrl, '_blank');
+        
+        // Poll for task completion
+        const checkCompletion = setInterval(() => {
+            fetch('/check_task_completion?user_id=' + encodeURIComponent(tempUserId))
+                .then(response => response.json())
+                .then(data => {
+                    if (data.task_completed) {
+                        clearInterval(checkCompletion);
+                        submitButton.disabled = false;
+                        taskInstruction.classList.add('d-none');
+                        taskButton.classList.add('d-none');
+                        alert('Verification task completed! You can now register.');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error checking task completion:', error);
+                });
+        }, 5000); // Check every 5 seconds
+    });
+});
+</script>
+{% endblock %}

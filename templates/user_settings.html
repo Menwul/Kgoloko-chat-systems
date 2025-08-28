@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block title %}Settings - Kgoloko Chatroom{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary-green text-white">
+                    <h4 class="mb-0"><i class="fas fa-cog me-2"></i>User Settings</h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('user_settings') }}">
+                        <div class="mb-3">
+                            <label for="theme" class="form-label">Theme</label>
+                            <select class="form-select" id="theme" name="theme">
+                                <option value="light" {% if settings.theme == 'light' %}selected{% endif %}>Light</option>
+                                <option value="dark" {% if settings.theme == 'dark' %}selected{% endif %}>Dark</option>
+                                <option value="auto" {% if settings.theme == 'auto' %}selected{% endif %}>Auto (System)</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="notifications" name="notifications" {% if settings.notifications %}checked{% endif %}>
+                                <label class="form-check-label" for="notifications">Enable Notifications</label>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="sound_effects" name="sound_effects" {% if settings.sound_effects %}checked{% endif %}>
+                                <label class="form-check-label" for="sound_effects">Enable Sound Effects</label>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="auto_login" name="auto_login" {% if settings.auto_login %}checked{% endif %}>
+                                <label class="form-check-label" for="auto_login">Auto Login</label>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="font_size" class="form-label">Font Size</label>
+                            <input type="range" class="form-range" id="font_size" name="font_size" min="12" max="24" value="{{ settings.font_size }}">
+                            <div class="text-center" id="font_size_value">{{ settings.font_size }}px</div>
+                        </div>
+                        
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary-green">Save Settings</button>
+                        </div>
+                    </form>
+                    
+                    <hr>
+                    
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('update_password') }}" class="btn btn-outline-primary-green">
+                            <i class="fas fa-lock me-2"></i>Change Password
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.getElementById('font_size').addEventListener('input', function() {
+        document.getElementById('font_size_value').textContent = this.value + 'px';
+    });
+</script>
+{% endblock %}

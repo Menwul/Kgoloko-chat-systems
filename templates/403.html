@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+
+{% block title %}Access Denied - Kgoloko Chatroom{% endblock %}
+
+{% block content %}
+<div class="container-fluid vh-100 d-flex align-items-center justify-content-center bg-light">
+    <div class="text-center">
+        <h1 class="display-1 text-primary-green">403</h1>
+        <h2>Access Denied</h2>
+        <p class="lead">You don't have permission to access this resource.</p>
+        <a href="{{ url_for('chat') }}" class="btn btn-primary-green">Go to Chat</a>
+    </div>
+</div>
+{% endblock %}
