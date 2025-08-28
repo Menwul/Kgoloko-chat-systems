@@ -1,0 +1,18 @@
+User-agent: *
+Disallow: /admin/
+Disallow: /chat/
+Disallow: /login/
+Disallow: /register/
+Disallow: /user_settings/
+Disallow: /forgot_password/
+Disallow: /update_password/
+
+# Allow indexing of main page and ads.txt
+Allow: /$
+Allow: /index.html$
+Allow: /static/
+Allow: /ads.txt
+
+Crawl-delay: 5
+
+Sitemap: https://kgoloko-chat-school-system.onrender.com/sitema.xml
