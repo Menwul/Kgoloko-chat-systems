@@ -6,29 +6,17 @@ from datetime import datetime, timedelta
 import uuid
 import json
 from functools import wraps
-from flask_limiter import Limiter
-from flask_limiter.util import get_remote_address
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = 'static/uploads'
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
-app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=24)
-app.secret_key = os.urandom(24)  # Secure secret key
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'mp4', 'mov', 'avi', 'wav', 'mp3', 'ogg', 'webm'}
-
-# Ensure upload folder exists when application starts
-os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'mp4', 'mov', 'avi', 'wav', 'mp3', 'ogg'}
 
 def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
-
-# Initialize flask-limiter
-limiter = Limiter(
-    get_remote_address,
-    app=app,
-    default_limits=["200 per day", "50 per hour"],
-    storage_uri="memory://"
-)
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+app.secret_key = 'your-secure-secret-key-here'  # Change this to a secure random key
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=24)
 
 # Database setup
 def init_db():
@@ -255,74 +243,48 @@ def login():
     
     return render_template('login.html')
 
-@app.route('/verify_linkvertise')
-def verify_linkvertise():
-    user_id = request.args.get('user_id')
-    if not user_id:
-        return jsonify({'error': 'Missing user_id parameter'}), 400
-    
-    session['linkvertise_task_completed'] = True
-    session['linkvertise_user_id'] = user_id
-    print(f"Linkvertise task completed for user_id: {user_id}")
-    
-    return render_template('task_complete.html')
-
-@app.route('/check_task_completion')
-@limiter.limit("30 per minute")  # Increased to allow more frequent polling
-def check_task_completion():
-    user_id = request.args.get('user_id')
-    task_completed = session.get('linkvertise_task_completed', False) and session.get('linkvertise_user_id') == user_id
-    print(f"Checking task completion for user_id: {user_id}, completed: {task_completed}")
-    return jsonify({'task_completed': task_completed}), 200
-
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
-        if not session.get('linkvertise_task_completed', False):
-            return render_template('register.html', error='Please complete the verification task before registering.')
-        
         username = request.form['username']
-        email = request.form.get('email', '')
         password = request.form['password']
         confirm_password = request.form['confirm_password']
+        email = request.form.get('email', '')
         role = request.form['role']
         
+        # Validation
         if password != confirm_password:
-            return render_template('register.html', error='Passwords do not match.')
+            return render_template('register.html', error="Passwords do not match")
         
-        if role not in ['student', 'teacher', 'parent', 'admin']:
-            return render_template('register.html', error='Invalid role selected.')
+        if len(username) < 3:
+            return render_template('register.html', error="Username must be at least 3 characters")
+        
+        if len(password) < 6:
+            return render_template('register.html', error="Password must be at least 6 characters")
         
         conn = sqlite3.connect('chatdatabase.db')
         c = conn.cursor()
-        
-        c.execute("SELECT id FROM users WHERE username = ?", (username,))
-        if c.fetchone():
+        try:
+            # New users are not approved by default
+            c.execute("INSERT INTO users (username, password, email, role, approved) VALUES (?, ?, ?, ?, ?)", 
+                     (username, password, email, role, False))
+            conn.commit()
+            
+            # Create user settings
+            user_id = c.lastrowid
+            c.execute("INSERT INTO user_settings (user_id) VALUES (?)", (user_id,))
+            conn.commit()
+            
             conn.close()
-            return render_template('register.html', error='Username already exists.')
-        
-        hashed_password = generate_password_hash(password)
-        c.execute("INSERT INTO users (username, email, password, role, approved, banned) VALUES (?, ?, ?, ?, ?, ?)",
-                 (username, email, hashed_password, role, False, False))
-        conn.commit()
-        conn.close()
-        
-        session.pop('linkvertise_task_completed', None)
-        session.pop('linkvertise_user_id', None)
-        
-        flash('Registration successful! Awaiting admin approval.', 'success')
-        return redirect(url_for('login'))
+            
+            flash('Registration successful! Please wait for admin approval.')
+            return redirect(url_for('login'))
+        except sqlite3.IntegrityError:
+            conn.close()
+            return render_template('register.html', error="Username or email already exists")
     
     return render_template('register.html')
 
-@app.route('/robots.txt')
-def robots():
-    return send_from_directory(app.static_folder, 'robots.txt')
-
-@app.route('/sitemap.xml')
-def sitemap():
-    return send_from_directory(app.static_folder, 'sitemap.xml')
-    
 @app.route('/forgot_password', methods=['GET', 'POST'])
 def forgot_password():
     if request.method == 'POST':
@@ -679,15 +641,15 @@ def logout():
 # Admin routes
 # Simulated admin credentials (in production, use environment variables or secure config)
 ADMIN_CREDENTIALS = {
-    'superadmin1': {
-        'password': 'LoveGod#kingno:1',  # Change this in production!
+    'admin': {
+        'password': 'admin123',  # Change this in production!
         'role': 'admin',
-        'email': 'superadmin1@kgoloko.com'
+        'email': 'admin@kgoloko.com'
     },
-    'superadmin2': {
-        'password': 'LoveGod@kingno:1',  # Change this in production!
+    'superadmin': {
+        'password': 'superadmin456',  # Change this in production!
         'role': 'admin', 
-        'email': 'superadmin2@kgoloko.com'
+        'email': 'superadmin@kgoloko.com'
     }
 }
 
@@ -751,7 +713,7 @@ def admin_login():
         return render_template('admin_login.html', error="Invalid admin credentials")
     
     return render_template('admin_login.html')
-
+    
 @app.route('/admin/users')
 @login_required
 @role_required(['admin'])
@@ -893,6 +855,6 @@ def internal_server_error(e):
 @app.errorhandler(403)
 def forbidden(e):
     return render_template('403.html'), 403
-  
+
 if __name__ == '__main__':
-    app.run(debug=True, host='127.0.0.1', port=5000)
+    app.run(debug=True, host='0.0.0.0', port=5000)
